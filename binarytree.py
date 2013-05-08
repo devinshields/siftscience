@@ -17,7 +17,7 @@ def ip_as_int(ip):
 
 def ip_ranges_do_overlap(range0, range1):
   ''' checks if two IP ranges overlap. Assumes that each 2tuple IP is ordered '''
-  return not ((range1[0] < range0[0] and range1[1] <= range0[0]) or (range0[0] < range1[0] and range0[1] <= range1[0]))
+  return not ((range1[0] < range0[0] and range1[1] < range0[0]) or (range0[0] < range1[0] and range0[1] < range1[0]))
 
 
 class CNode:
@@ -45,7 +45,6 @@ class CBOrdTree:
 
   def insert(self, cur_node, new_node):
     ''' add a new node to the binary tree '''
-    print new_node
     if not cur_node:
       return new_node
     else:
@@ -57,10 +56,9 @@ class CBOrdTree:
         cur_node.right = self.insert(cur_node.right, new_node)
       return cur_node
 
-  def lookup(self, cur_node, ip_str):
-    target_ip = ip_as_int(ip_str)
+  def lookup(self, cur_node, target_ip):
     if not cur_node:
-      raise Exception('IP-to-country lookup error. No country avilable for this IP address.')
+      raise Exception('LOOKUP ERROR: No country avilable for this IP address.')
     if cur_node.contains(target_ip):
       return cur_node.country_code
     else:
