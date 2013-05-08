@@ -1,0 +1,10 @@
+{ "ip_start" : "0.116.0.0", "ip_end" : "0.119.255.255", "country" : "AT", "latitude" : 47.3333, "longitude" : 13.3333}
+{ "ip_start" : "1.0.0.0", "ip_end" : "1.0.0.255", "country" : "AU", "latitude" : -27, "longitude" : 133}
+{ "ip_start" : "1.9.0.0", "ip_end" : "1.9.1.255", "country" : "MY", "region" : 2, "city" : "Kulim", "latitude" : 5.3667, "longitude" : 100.5667}
+{ "ip_start" : "1.0.1.0", "ip_end" : "1.0.3.255", "country" : "CN", "latitude" : 35, "longitude" : 105}
+{ "ip_start" : "1.0.4.0", "ip_end" : "1.0.7.255", "country" : "AU", "latitude" : -27, "longitude" : 133}
+{ "ip_start" : "1.0.8.0", "ip_end" : "1.0.15.255", "country" : "CN", "latitude" : 35, "longitude" : 105}
+{ "ip_start" : "1.8.0.0", "ip_end" : "1.8.255.255", "country" : "CN", "latitude" : 35, "longitude" : 105}
+{ "ip_start" : "1.9.2.0", "ip_end" : "1.9.2.127", "country" : "MY", "region" : 2, "city" : "Alor Setar", "latitude" : 6.1167, "longitude" : 100.3667}
+{ "ip_start" : "1.9.2.128", "ip_end" : "1.9.2.179", "country" : "MY", "region" : 2, "city" : "Kulim", "latitude" : 5.3667, "longitude" : 100.5667}
+{ "ip_start" : "1.9.2.180", "ip_end" : "1.9.2.180", "country" : "MY", "region" : 9, "city" : "Permatang Pauh", "latitude" :5.4167, "longitude" : 100.4167}
