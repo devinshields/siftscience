@@ -1,0 +1,110 @@
+Here is an excerpt of a file containing some data that we use for mapping IP addresses to locations in our fraud detection system.    The first 10 lines of the file are shown, but the full file has about 7 million lines.
+
+{ "ip_start" : "0.116.0.0", "ip_end" : "0.119.255.255", "country" : "AT", "latitude" : 47.3333, "longitude" : 13.3333}
+{ "ip_start" : "1.0.0.0", "ip_end" : "1.0.0.255", "country" : "AU", "latitude" : -27, "longitude" : 133}
+{ "ip_start" : "1.9.0.0", "ip_end" : "1.9.1.255", "country" : "MY", "region" : 2, "city" : "Kulim", "latitude" : 5.3667, "longitude" : 100.5667}
+{ "ip_start" : "1.0.1.0", "ip_end" : "1.0.3.255", "country" : "CN", "latitude" : 35, "longitude" : 105}
+{ "ip_start" : "1.0.4.0", "ip_end" : "1.0.7.255", "country" : "AU", "latitude" : -27, "longitude" : 133}
+{ "ip_start" : "1.0.8.0", "ip_end" : "1.0.15.255", "country" : "CN", "latitude" : 35, "longitude" : 105}
+{ "ip_start" : "1.8.0.0", "ip_end" : "1.8.255.255", "country" : "CN", "latitude" : 35, "longitude" : 105}
+{ "ip_start" : "1.9.2.0", "ip_end" : "1.9.2.127", "country" : "MY", "region" : 2, "city" : "Alor Setar", "latitude" : 6.1167, "longitude" : 100.3667}
+{ "ip_start" : "1.9.2.128", "ip_end" : "1.9.2.179", "country" : "MY", "region" : 2, "city" : "Kulim", "latitude" : 5.3667, "longitude" : 100.5667}
+{ "ip_start" : "1.9.2.180", "ip_end" : "1.9.2.180", "country" : "MY", "region" : 9, "city" : "Permatang Pauh", "latitude" :5.4167, "longitude" : 100.4167}
+
+
+
+1) Given the intended use of this data, how would you sanity check this file to ensure that it is doing a good job of what it is supposed to do?
+        a. look at a map with my eyeballs
+        b. check for valid JSON in all rows
+        c. check for intra field consistency - use regex validation for each field type, e.g. IP address:      \d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}
+        d. check for stuctural/relational integrity
+                x. each IP maps to a unique country
+        e. external verification. check with external sources regarding the accuracy of the map
+        
+
+        
+2) If we wanted to build a fast and memory-efficient IP-to-location system with this data, how would we do it?   How much space would the data take up in memory?
+        a. Hash mapping from each IP address to a country value is too memory inefficient for large IP ranges
+        b. a binary tree that takes advantage of the ordered, non-overlapping
+           nature would be a nice tool. For average complexity measures:
+             x. Memory:         O(n) - for range data and O(log(n)) for node pointers
+             x. Insertion Time: O(log(n)) - for tree traversal
+             x. Lookup Time:    O(log(n)) - for tree traversal
+        
+I rolled a demo of such an algorithm, including overlap checks and lookup
+functionalality. Unit test output is below. Working code organized into modules
+is available here:
+  https://github.com/devinshields/siftscience
+
+In a mature system, I'd:
+        a. make the tree self balancing to avoid long tail inserts/lookups
+        b. cache popular or important IP ranges for spped
+        c. merge adjacent nodes to reduce tree complexity, e.g. merge (12-17) + (18-21) -> (12-21)
+
+--------------------------------------------------------------------------------
+admins-MacBook-Pro:siftscience admin$ ./IPcountrylookupTest.py
+Adding new IP ranges to the lookup tree
+	(u'0.116.0.0', u'0.119.255.255', u'AT')
+	(u'1.0.0.0', u'1.0.0.255', u'AU')
+	(u'1.9.0.0', u'1.9.1.255', u'MY')
+	(u'1.0.1.0', u'1.0.3.255', u'CN')
+	(u'1.0.4.0', u'1.0.7.255', u'AU')
+	(u'1.0.8.0', u'1.0.15.255', u'CN')
+	(u'1.8.0.0', u'1.8.255.255', u'CN')
+	(u'1.9.2.0', u'1.9.2.127', u'MY')
+	(u'1.9.2.128', u'1.9.2.179', u'MY')
+	(u'1.9.2.180', u'1.9.2.180', u'MY')
+
+Finished adding new IP ranges
+
+Testing IP lookup
+	0.115.0.0 LOOKUP ERROR: No country avilable for this IP address.
+	0.116.0.0 AT
+	0.119.255.255 AT
+	0.120.0.0 LOOKUP ERROR: No country avilable for this IP address.
+	1.8.5.255 CN
+-----------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+3) Write a tool that computes some kind of interesting analysis, visualization, or sanity check of the data.
+
+  The tool referenced in question (2) checks for any overlapping IP ranges.
+  I wrote a quick tool to capture data from whois services. The code to generate these results is here:
+    
+
+
+---------------------------------------------------------------------------------------------------------------------------
+{u'latitude': 47.3333, u'country': u'AT', u'ip_end': u'0.119.255.255', u'longitude': 13.3333, u'ip_start': u'0.116.0.0'}
+	Testing IP: 0.116.0.0
+	CITY:           LOS ANGELES
+	COUNTRY:        US
+
+{u'latitude': -27, u'country': u'AU', u'ip_end': u'1.0.0.255', u'longitude': 133, u'ip_start': u'1.0.0.0'}
+	Testing IP: 1.0.0.0
+	CITY:           SOUTH BRISBANE
+	COUNTRY:        AU
+
+{u'city': u'Kulim', u'country': u'MY', u'region': 2, u'longitude': 100.5667, u'latitude': 5.3667, u'ip_end': u'1.9.1.255', u'ip_start': u'1.9.0.0'}
+	Testing IP: 1.9.0.0
+	CITY:           SOUTH BRISBANE
+	COUNTRY:        AU
+	COUNTRY:        MY
+
+{u'latitude': 35, u'country': u'CN', u'ip_end': u'1.0.3.255', u'longitude': 105, u'ip_start': u'1.0.1.0'}
+	Testing IP: 1.0.1.0
+	CITY:           SOUTH BRISBANE
+	COUNTRY:        AU
+	COUNTRY:        CN    
+-------------------------------------------------------------------------------------------------------------------------
+
+
+
+4) How might IP-to-location be used in a fraud detection system, and do any caveats come to mind about using this data for that purpose?
+
+
+
+
+
+
