@@ -1,5 +1,6 @@
 #!/usr/bin/python
-''' binary tree and node classes
+''' binary tree and node classes for fast storage and lookup of IP range related data.
+    should work equally well with any other ordered, non-overlapping lookup keys.
       some code borrowed from: http://code.activestate.com/recipes/286239-binary-ordered-tree/
 
     TODO, IMPROVEMENTS, OPTIMIZATIONS:

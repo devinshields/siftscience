@@ -1,3 +1,10 @@
+-----------------------------------------------------------------------------------------------------------------------------
+-- NOTE: my complete response and some executable demo code is available here:
+--
+--        https://github.com/devinshields/siftscience
+--
+-----------------------------------------------------------------------------------------------------------------------------
+
 Here is an excerpt of a file containing some data that we use for mapping IP addresses to locations in our fraud detection system.    The first 10 lines of the file are shown, but the full file has about 7 million lines.
 
 { "ip_start" : "0.116.0.0", "ip_end" : "0.119.255.255", "country" : "AT", "latitude" : 47.3333, "longitude" : 13.3333}
@@ -16,32 +23,38 @@ Here is an excerpt of a file containing some data that we use for mapping IP add
 1) Given the intended use of this data, how would you sanity check this file to ensure that it is doing a good job of what it is supposed to do?
         a. look at a map with my eyeballs
         b. check for valid JSON in all rows
-        c. check for intra field consistency - use regex validation for each field type, e.g. IP address:      \d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}
-        d. check for stuctural/relational integrity
+        c. check for intra field consistency - use regex validation for each field type, e.g. IP address: \d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}
+        d. check for structural/relational integrity
                 x. each IP maps to a unique country
-        e. external verification. check with external sources regarding the accuracy of the map
+                x. no IP ranges overlap (or if they do overlap, that there's no ambiguity about features an address maps to)
+        e. check with external sources regarding the accuracy of each feature mapping
         
 
         
 2) If we wanted to build a fast and memory-efficient IP-to-location system with this data, how would we do it?   How much space would the data take up in memory?
-        a. Hash mapping from each IP address to a country value is too memory inefficient for large IP ranges
-        b. a binary tree that takes advantage of the ordered, non-overlapping
-           nature would be a nice tool. For average complexity measures:
-             x. Memory:         O(n) - for range data and O(log(n)) for node pointers
+        a. a binary tree that takes advantage of the ordered, non-overlapping
+           nature of IP ranges would be nice. For average complexity measures:
+             x. Memory:         O(n) - for range data and O(log(n)) for inter-node pointers
              x. Insertion Time: O(log(n)) - for tree traversal
              x. Lookup Time:    O(log(n)) - for tree traversal
         
-I rolled a demo of such an algorithm, including overlap checks and lookup
-functionalality. Unit test output is below. Working code organized into modules
+I rolled a small python demo of such a tool, it includes IP range overlap checks on the insertion
+and a get/lookup API. Unit test output for the tool is below. Working code organized into modules
 is available here:
-  https://github.com/devinshields/siftscience
+
+  Implementation:   https://github.com/devinshields/siftscience/blob/master/binarytree.py
+  Unit Test:        https://github.com/devinshields/siftscience/blob/master/IPcountrylookupTest.py
 
 In a mature system, I'd:
         a. make the tree self balancing to avoid long tail inserts/lookups
-        b. cache popular or important IP ranges for spped
-        c. merge adjacent nodes to reduce tree complexity, e.g. merge (12-17) + (18-21) -> (12-21)
+        b. cache popular or important IP ranges for speed
+        c. merge IP range adjacent nodes to reduce node complexity. e.g. merge (12-17) + (18-21) -> (12-21)
+        d. use C++ instead of python
 
---------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------------
+-- UNIT TEST OUTPUT: FAST, MEMORY-EFFICIENT IP-TO-LOCATION LOOKUP TOOL
+-----------------------------------------------------------------------------------------------------------------------------
+
 admins-MacBook-Pro:siftscience admin$ ./IPcountrylookupTest.py
 Adding new IP ranges to the lookup tree
 	(u'0.116.0.0', u'0.119.255.255', u'AT')
@@ -65,17 +78,28 @@ Testing IP lookup
 	1.8.5.255 CN
 -----------------------------------------------------------------------------------------------------------------------------
 
+-------------------------------------------------------------------------------------------------------------------------
+
 
 
 
 3) Write a tool that computes some kind of interesting analysis, visualization, or sanity check of the data.
 
-  The tool referenced in question (2) checks for any overlapping IP ranges.
-  I wrote a quick tool to capture data from whois services. The code to generate these results is here:
-    
+The tool referenced in question (2) checks for overlapping IP ranges. I wrote a tool to
+query WHOIS for data regarding the first IP address in the specified range. It would not
+be hard to randomize the IP selection and pull down more than 1 sample per range. Some
+of the IPs in the example do not match their unit test output, they (or the WHOIS data)
+may be out of date.
+
+Working code is available here:
+
+    Implementation: https://github.com/devinshields/siftscience/blob/master/whoischeck.py
 
 
----------------------------------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------------
+-- UNIT TEST OUTPUT: IP-TO-LOCATION WHOIS VALIDATOR
+-----------------------------------------------------------------------------------------------------------------------------
+
 {u'latitude': 47.3333, u'country': u'AT', u'ip_end': u'0.119.255.255', u'longitude': 13.3333, u'ip_start': u'0.116.0.0'}
 	Testing IP: 0.116.0.0
 	CITY:           LOS ANGELES
@@ -99,12 +123,33 @@ Testing IP lookup
 	COUNTRY:        CN    
 -------------------------------------------------------------------------------------------------------------------------
 
+-------------------------------------------------------------------------------------------------------------------------
+
 
 
 4) How might IP-to-location be used in a fraud detection system, and do any caveats come to mind about using this data for that purpose?
 
+Assuming access to transaction data, the following seem like good fraud related candidates:
 
+  a. Feature: User activity does not match the known region of the user's billing address
+     Feature: User activity from a historically unvisited location (e.g. facebook's "you logged in from a new location" service)
+     Feature: Increased location variance for a given account (historic non-traveler starts jet-setting or a jump in distinct locations in a given time window)
+         Caveats: frequent travelers (e.g. truck drivers) to not want to ID verify every time they use a service
 
+  b. Feature: Fast location change for activity authorized under one account
+         Caveats: some services are multi-user friendly (e.g. netflix)
+                  users can jump large distances (measured in IP lookup) by using a VPN or a proxy
 
-
-
+  c. Feature: Local time at an IP's location (more people shop online at 8pm than 3am)
+         Caveats: legitimate users can be online any time
+                  services in different business sectors probably have radically different time-usage profiles (e.g. credit-card services vs. online shopping)
+      
+  d. Feature: Any major shift in the location-distribution of traffic to a site (e.g. lots of new traffic observed from a historically dormant location)
+        Caveats: web traffic tends towards burstiness as links propogate, especially through social media. Blocking
+                 large groups of new users might run counter to a service's business goals
+  
+  e. Feature: Historic likelihood of attacks from known bad sources (e.g. there are pirates in Russia and China)
+         Caveats: there can be legitimate users in 'bad' locations or regions
+                  IP address allocations can change, probably better to do historic modeling with location rather than IP address
+  
+  f. Feature: The HTTP 'Accept-Language' header for a given user does not match their country's known native language(s)
